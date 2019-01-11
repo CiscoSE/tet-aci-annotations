@@ -54,3 +54,9 @@ optional arguments:
                         APIC Username - Can alternatively be set via
                         environment variable "ANNOTATE_APIC_USER"
 ```
+
+To change the annotations that are being sent to Tetration, edit the following line at the top of the script.  Order is not important.
+
+```
+config['annotations'] = ['bd','tenant','vrf','app','epg','intf','leaf']
+```
