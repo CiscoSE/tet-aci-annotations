@@ -227,12 +227,12 @@ def main():
     """
     conf_vars = {
                 'tet_url':{
-                    'descr':'Tetration API URL (https://url)',
+                    'descr':'Tetration API URL (ex: https://url)',
                     'env':'ANNOTATE_TET_URL',
                     'conf':'url'
                     },
                 'tet_creds':{
-                    'descr':'Tetration API Credentials File',
+                    'descr':'Tetration API Credentials File (ex: /User/credentials.json)',
                     'env':'ANNOTATE_TET_CREDS',
                     'conf':'creds',
                     'alt':['tet_api_key','tet_api_secret']
@@ -243,7 +243,7 @@ def main():
                     'conf':'frequency'
                     },
                 'apic_url':{
-                    'descr':'APIC URL (https://url)',
+                    'descr':'APIC URL (ex: https://url)',
                     'env':'ANNOTATE_APIC_URL',
                     'conf':'apic_url'
                     },
