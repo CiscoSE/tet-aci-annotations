@@ -9,6 +9,7 @@ from collections import deque
 from time import sleep, time
 import tempfile
 import argparse
+import getpass
 
 import requests
 from pylru import lrudecorator
@@ -84,12 +85,12 @@ class Track(StoppableThread):
     def upload_annotations(self):
         if 'creds' in self.config:
             restclient = RestClient(
-                "https://" + self.config["url"],
+                self.config["url"],
                 credentials_file=self.config['creds'],
                 verify=self.config["verify"])
         else:
             restclient = RestClient(
-                "https://" + self.config["url"],
+                self.config["url"],
                 api_key=self.config["key"],
                 api_secret=self.config["secret"],
                 verify=self.config["verify"])
@@ -226,15 +227,15 @@ def main():
     """
     conf_vars = {
                 'tet_url':{
-                    'descr':'Tetration API URL',
-                    'envs':['TA_ACI_URL'],
+                    'descr':'Tetration API URL (https://url)',
+                    'env':'ANNOTATE_TET_URL',
                     'conf':'url'
                     },
-                'tet_creds_file':{
+                'tet_creds':{
                     'descr':'Tetration API Credentials File',
-                    'envs':['TA_ACI_API_KEY','TA_ACI_API_SECRET'],
+                    'env':'ANNOTATE_TET_CREDS',
                     'conf':'creds',
-                    'alt-conf':['key','secret']
+                    'alt':['tet_api_key','tet_api_secret']
                     },
                 'frequency':{
                     'descr':'Frequency to pull from APIC and upload to Tetration',
@@ -242,62 +243,54 @@ def main():
                     'conf':'frequency'
                     },
                 'apic_url':{
-                    'descr':'Tetration API Credentials File',
-                    'envs':['TA_ACI_APIC_URL'],
+                    'descr':'APIC URL (https://url)',
+                    'env':'ANNOTATE_APIC_URL',
                     'conf':'apic_url'
                     },
                 'apic_user':{
-                    'descr':'APIC URL',
-                    'envs':['TA_ACI_APIC_USER'],
+                    'descr':'APIC Username',
+                    'env':'ANNOTATE_APIC_USER',
                     'conf':'apic_user'
                     },
                 'apic_pw':{
-                    'descr':'APIC Username',
-                    'envs':['TA_ACI_APIC_PW'],
-                    'conf':'apic_pw'
+                    'descr':'APIC Password',
+                    'env':'ANNOTATE_APIC_PW',
+                    'conf':'apic_pw',
+                    'hidden':True
                     },
                 'tenant':{
                     'descr':'Tetration Tenant Name',
-                    'envs':['TA_ACI_TENANT'],
+                    'env':'ANNOTATE_TENANT',
                     'conf':'vrf'
                     }
                 }
     
-    parser = argparse.ArgumentParser(description='Tetration-ACI Annotator')
+    parser = argparse.ArgumentParser(description='Tetration-ACI Annotator: Required inputs are below.  Any inputs not collected via command line arguments or environment variables will be collected via interactive prompt.')
     for item in conf_vars:
         descr = conf_vars[item]['descr']
-        if 'envs' in conf_vars[item]:
-            descr = '{} - Can alternatively be set via environment variable(s) {}'.format(conf_vars[item]['descr'],' and '.join(conf_vars[item]['envs']))
+        if 'env' in conf_vars[item]:
+            descr = '{} - Can alternatively be set via environment variable "{}"'.format(conf_vars[item]['descr'],conf_vars[item]['env'])
         default = None
         if 'default' in conf_vars[item]:
             default = conf_vars[item]['default']
+        elif 'env' in conf_vars[item]:
+            default = os.environ.get(conf_vars[item]['env'], None)
         parser.add_argument('--'+item,default=default,help=descr)
     args = parser.parse_args()
 
     config = {'verify':False,'annotations':['bd','vrf','app','epg','intf','leaf']}
-    errors = []
     for arg in vars(args):
         attribute = getattr(args, arg)
         if attribute == None:
-            try:
-                for i,item in enumerate(conf_vars[arg]['envs']):
-                    if os.environ.get(item) == None:
-                        errors.append(arg)
-                    else:
-                        if len(conf_vars[arg]['envs'])>0:
-                            config[conf_vars[arg]['alt-conf'][i]] = os.environ.get(item)
-                        else:
-                            config[conf_vars[arg]['conf']] = os.environ.get(item)
-            except:
-                errors.append(arg)
-                continue
+            if 'hidden' in conf_vars[arg]:
+                config[conf_vars[arg]['conf']] = getpass.getpass('{}: '.format(conf_vars[arg]['descr']))
+            else:
+                config[conf_vars[arg]['conf']] = raw_input('{}: '.format(conf_vars[arg]['descr']))
         else:
             config[conf_vars[arg]['conf']] = attribute
-    if len(errors) > 0:
-        print('Required variables not provided for: \n  --{}\nRun with --help to see all required options'.format('\n  --'.join(errors)))
-    else:
-        tracker = Track(config)
-        tracker.run()
+
+    tracker = Track(config)
+    tracker.run()
 
 if __name__ == '__main__':
     main()
