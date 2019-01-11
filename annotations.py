@@ -1,3 +1,21 @@
+"""
+Copyright (c) 2018 Cisco and/or its affiliates.
+This software is licensed to you under the terms of the Cisco Sample
+Code License, Version 1.0 (the "License"). You may obtain a copy of the
+License at
+               https://developer.cisco.com/docs/licenses
+All use of the material herein must be in accordance with the terms of
+the License. All rights not expressly granted by the License are
+reserved. Unless required by applicable law or agreed to separately in
+writing, software distributed under the License is distributed on an "AS
+IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+or implied.
+"""
+
+__author__ = "Chris McHenry"
+__copyright__ = "Copyright (c) 2019 Cisco and/or its affiliates."
+__license__ = "Cisco Sample Code License, Version 1.0"
+
 import os
 import re
 import logging
@@ -19,6 +37,11 @@ from tetpyclient import MultiPartOption, RestClient
 import acitoolkit.acitoolkit as aci
 
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+
+# Config option to enable/disable the fields being pushed to Tetration
+config = {}
+config['annotations'] = ['bd','tenant','vrf','app','epg','intf','leaf']
+
 
 @lrudecorator(200)
 def get_tenant_deep(session, tenant):
@@ -96,12 +119,6 @@ class Track(StoppableThread):
                 verify=self.config["verify"])
         # sleep for 30 seconds to stagger uploading
         sleep(30)
-
-        #selected_annotations = sorted([
-        #    annotation
-        #    for annotation, include in self.config["annotations"].items()
-        #    if include
-        #])
 
         labels = {
             "mac": 'ACI MAC',
@@ -278,7 +295,8 @@ def main():
         parser.add_argument('--'+item,default=default,help=descr)
     args = parser.parse_args()
 
-    config = {'verify':False,'annotations':['bd','vrf','app','epg','intf','leaf']}
+    config['verify'] = False
+
     for arg in vars(args):
         attribute = getattr(args, arg)
         if attribute == None:
