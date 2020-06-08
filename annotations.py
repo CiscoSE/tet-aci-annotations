@@ -41,15 +41,21 @@ requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 # Config option to enable/disable the fields being pushed to Tetration
 config = {}
 config['annotations'] = ['bd','tenant','vrf','app','epg','intf','leaf']
+DEBUG=True
 
 
 @lrudecorator(200)
 def get_tenant_deep(session, tenant):
+    if DEBUG==True:
+        print('Getting nested tenant config for tenant: {}'.format(tenant))
+        print(aci.Tenant.get_deep(session, names=(tenant.name, )))
     return aci.Tenant.get_deep(session, names=(tenant.name, ))[0]
 
 
 @lrudecorator(1000)
 def get_ctx_and_bd(session, tenant, app, epg):
+    if DEBUG==True:
+        print('Getting vrf and bd information for: tenant={},app={},epg={}'.format(tenant,app,epg))
     searcher = aci.Search()
     searcher.name = epg.name
     deep_tenant = get_tenant_deep(session, tenant)
@@ -137,7 +143,7 @@ class Track(StoppableThread):
 
         while True:
             if self.stopped():
-                print "Cleaning up annotation thread"
+                print("Cleaning up annotation thread")
                 return
             if self.annotations:
                 try:
@@ -145,8 +151,8 @@ class Track(StoppableThread):
                     # if an endpoint receives an event while we upload
                     # data to Tetration
                     self.lock.acquire()
-                    print "Writing Annotations (Total: %s) " % len(
-                        self.annotations)
+                    print("Writing Annotations (Total: %s) " % len(
+                        self.annotations))
                     with NamedTemporaryFile() as tf:
                         wr = writer(tf)
                         wr.writerow(headers)
@@ -160,12 +166,12 @@ class Track(StoppableThread):
                             MultiPartOption(
                                 key='X-Tetration-Oper', val='add')
                         ]
-                        print '/openapi/v1/assets/cmdb/upload/{}'.format(self.config["vrf"])
+                        print('/openapi/v1/assets/cmdb/upload/{}'.format(self.config["vrf"]))
                         resp = restclient.upload(
                             tf.name, '/openapi/v1/assets/cmdb/upload/{}'.format(
                                 self.config["vrf"]), req_payload)
                         if resp.ok:
-                            print "Uploaded Annotations"
+                            print("Uploaded Annotations")
                             self.log.append({
                                 "timestamp": time(),
                                 "message":
@@ -173,22 +179,22 @@ class Track(StoppableThread):
                             })
                             self.annotations.clear()
                         else:
-                            print "Failed to Upload Annotations"
-                            print resp.text
+                            print("Failed to Upload Annotations")
+                            print(resp.text)
                 finally:
                     self.lock.release()
             else:
-                print "No new annotations to upload"
-            print "Waiting {} seconds".format(int(self.config["frequency"]))
+                print("No new annotations to upload")
+            print("Waiting {} seconds".format(int(self.config["frequency"])))
             sleep(int(self.config["frequency"]))
 
     def track(self):
-        print "Collecting existing Endpoint data..."
+        print("Collecting existing Endpoint data...")
         session = aci.Session(self.config['apic_url'], self.config['apic_user'], self.config['apic_pw'])
         resp = session.login()
 
         while True:
-            print "Searching for endpoints"
+            print("Searching for endpoints")
             # Download all of the Endpoints
             endpoints = aci.Endpoint.get(session)
             for ep in endpoints:
@@ -197,20 +203,24 @@ class Track(StoppableThread):
                 except AttributeError:
                     continue
                 if ep.ip != "0.0.0.0":
-                    app_profile = epg.get_parent()
-                    tenant = app_profile.get_parent()
-                    bd, vrf = get_ctx_and_bd(session, tenant, app_profile, epg)
-                    if ep.if_dn:
-                        for dn in ep.if_dn:
-                            match = re.match('protpaths-(\d+)-(\d+)',
-                                             dn.split('/')[2])
-                            if match:
-                                if match.group(1) and match.group(2):
-                                    int_name = match.group(1) + "-" + match.group(2) + " " + ep.if_name
-                                    leaf = match.group(1) + "-" + match.group(2)
-                    else:
-                        int_name = ep.if_name
-                        leaf = ep.if_name.split('/')[1]
+                    try:
+                        app_profile = epg.get_parent()
+                        tenant = app_profile.get_parent()
+                        bd, vrf = get_ctx_and_bd(session, tenant, app_profile, epg)
+                        if ep.if_dn:
+                            for dn in ep.if_dn:
+                                match = re.match('protpaths-(\d+)-(\d+)',
+                                                dn.split('/')[2])
+                                if match:
+                                    if match.group(1) and match.group(2):
+                                        int_name = match.group(1) + "-" + match.group(2) + " " + ep.if_name
+                                        leaf = match.group(1) + "-" + match.group(2)
+                        else:
+                            int_name = ep.if_name
+                            leaf = ep.if_name.split('/')[1]
+                    except:
+                        print('Errror with EP: ip={},tenant={},app_profile={},epg={}'.format(ep.ip,tenant,app_profile,epg))
+                        continue
                     try:
                         data = {
                             "ip": ep.ip,
@@ -234,7 +244,7 @@ class Track(StoppableThread):
                 else:
                     continue
             if self.stopped():
-                print "Cleaning up track thread"
+                print("Cleaning up track thread")
                 return
             sleep(int(self.config["frequency"]))
 
