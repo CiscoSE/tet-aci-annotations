@@ -31,12 +31,9 @@ import getpass
 
 import requests
 from pylru import lrudecorator
-from requests.packages.urllib3.exceptions import InsecureRequestWarning
 from tetpyclient import MultiPartOption, RestClient
 
 import acitoolkit.acitoolkit as aci
-
-requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 # Config option to enable/disable the fields being pushed to Tetration
 config = {}
@@ -48,7 +45,6 @@ DEBUG=True
 def get_tenant_deep(session, tenant):
     if DEBUG==True:
         print('Getting nested tenant config for tenant: {}'.format(tenant))
-        print(aci.Tenant.get_deep(session, names=(tenant.name, )))
     return aci.Tenant.get_deep(session, names=(tenant.name, ))[0]
 
 
@@ -167,9 +163,9 @@ class Track(StoppableThread):
                                 key='X-Tetration-Oper', val='add')
                         ]
                         print('/openapi/v1/assets/cmdb/upload/{}'.format(self.config["vrf"]))
-                        resp = restclient.upload(
-                            tf.name, '/openapi/v1/assets/cmdb/upload/{}'.format(
-                                self.config["vrf"]), req_payload)
+                        # resp = restclient.upload(
+                        #     tf.name, '/openapi/v1/assets/cmdb/upload/{}'.format(
+                        #         self.config["vrf"]), req_payload)
                         if resp.ok:
                             print("Uploaded Annotations")
                             self.log.append({
@@ -192,7 +188,6 @@ class Track(StoppableThread):
         print("Collecting existing Endpoint data...")
         session = aci.Session(self.config['apic_url'], self.config['apic_user'], self.config['apic_pw'])
         resp = session.login()
-
         while True:
             print("Searching for endpoints")
             # Download all of the Endpoints
@@ -215,11 +210,17 @@ class Track(StoppableThread):
                                     if match.group(1) and match.group(2):
                                         int_name = match.group(1) + "-" + match.group(2) + " " + ep.if_name
                                         leaf = match.group(1) + "-" + match.group(2)
+                                else:
+                                    int_name = ep.if_name
+                                    match = re.match('paths-(\d+)',dn.split('/')[2])
+                                    leaf = match.group(1)
                         else:
                             int_name = ep.if_name
                             leaf = ep.if_name.split('/')[1]
+
                     except:
                         print('Errror with EP: ip={},tenant={},app_profile={},epg={}'.format(ep.ip,tenant,app_profile,epg))
+                        int_name = 'Unknown'
                         continue
                     try:
                         data = {
@@ -236,6 +237,7 @@ class Track(StoppableThread):
                             "epg_dn": "uni/tn-{}/ap-{}/epg-{}".format(
                                 tenant.name, app_profile.name, epg.name)
                         }
+                        print(data)
                         self.lock.acquire()
                         self.annotations[ep.ip] = data
                         self.lock.release()
@@ -313,7 +315,7 @@ def main():
             if 'hidden' in conf_vars[arg]:
                 config[conf_vars[arg]['conf']] = getpass.getpass('{}: '.format(conf_vars[arg]['descr']))
             else:
-                config[conf_vars[arg]['conf']] = raw_input('{}: '.format(conf_vars[arg]['descr']))
+                config[conf_vars[arg]['conf']] = input('{}: '.format(conf_vars[arg]['descr']))
         else:
             config[conf_vars[arg]['conf']] = attribute
 
