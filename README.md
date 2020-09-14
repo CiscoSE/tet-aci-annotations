@@ -31,7 +31,7 @@ pip install tetpyclient pylru
 All of the arguments can be provided via the command line arguments, Environment Variables, or via interactive prompts when launching the script.
 
 ```
-python annotations.py --help
+python3 annotations.py --help
 
 optional arguments:
   -h, --help            show this help message and exit
