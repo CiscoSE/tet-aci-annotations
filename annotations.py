@@ -163,9 +163,9 @@ class Track(StoppableThread):
                                 key='X-Tetration-Oper', val='add')
                         ]
                         print('/openapi/v1/assets/cmdb/upload/{}'.format(self.config["vrf"]))
-                        # resp = restclient.upload(
-                        #     tf.name, '/openapi/v1/assets/cmdb/upload/{}'.format(
-                        #         self.config["vrf"]), req_payload)
+                        resp = restclient.upload(
+                            tf.name, '/openapi/v1/assets/cmdb/upload/{}'.format(
+                                self.config["vrf"]), req_payload)
                         if resp.ok:
                             print("Uploaded Annotations")
                             self.log.append({
@@ -237,7 +237,7 @@ class Track(StoppableThread):
                             "epg_dn": "uni/tn-{}/ap-{}/epg-{}".format(
                                 tenant.name, app_profile.name, epg.name)
                         }
-                        print(data)
+                        #print(data)
                         self.lock.acquire()
                         self.annotations[ep.ip] = data
                         self.lock.release()
