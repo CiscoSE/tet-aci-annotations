@@ -38,7 +38,7 @@ import acitoolkit.acitoolkit as aci
 # Config option to enable/disable the fields being pushed to Tetration
 config = {}
 config['annotations'] = ['bd','tenant','vrf','app','epg','intf','leaf']
-DEBUG=True
+DEBUG=False
 
 
 @lrudecorator(200)
@@ -149,7 +149,7 @@ class Track(StoppableThread):
                     self.lock.acquire()
                     print("Writing Annotations (Total: %s) " % len(
                         self.annotations))
-                    with NamedTemporaryFile() as tf:
+                    with NamedTemporaryFile(mode = "w") as tf:
                         wr = writer(tf)
                         wr.writerow(headers)
                         for att in self.annotations.values():
