@@ -28,6 +28,7 @@ from time import sleep, time
 import tempfile
 import argparse
 import getpass
+from tqdm import tqdm
 
 import requests
 from pylru import lrudecorator
@@ -192,7 +193,8 @@ class Track(StoppableThread):
             print("Searching for endpoints")
             # Download all of the Endpoints
             endpoints = aci.Endpoint.get(session)
-            for ep in endpoints:
+            print("Found {} endpoints.".format(len(endpoints)))
+            for ep in tqdm(endpoints):
                 try:
                     epg = ep.get_parent()
                 except AttributeError:
