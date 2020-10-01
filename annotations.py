@@ -40,6 +40,7 @@ import acitoolkit.acitoolkit as aci
 # Config option to enable/disable the fields being pushed to Tetration
 config = {}
 config['annotations'] = ['bd','tenant','vrf','app','epg','intf','leaf']
+config['annotations'] = ['tenant','app','epg','intf','leaf']
 DEBUG=False
 
 
