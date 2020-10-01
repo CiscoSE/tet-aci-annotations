@@ -29,6 +29,7 @@ import tempfile
 import argparse
 import getpass
 from tqdm import tqdm
+import traceback
 
 import requests
 from pylru import lrudecorator
@@ -203,7 +204,7 @@ class Track(StoppableThread):
                     try:
                         app_profile = epg.get_parent()
                         tenant = app_profile.get_parent()
-                        bd, vrf = get_ctx_and_bd(session, tenant, app_profile, epg)
+                        #bd, vrf = get_ctx_and_bd(session, tenant, app_profile, epg)
                         if ep.if_dn:
                             for dn in ep.if_dn:
                                 match = re.match('protpaths-(\d+)-(\d+)',
@@ -223,13 +224,14 @@ class Track(StoppableThread):
                     except:
                         print('Errror with EP: ip={},tenant={},app_profile={},epg={}'.format(ep.ip,tenant,app_profile,epg))
                         int_name = 'Unknown'
+                        print(traceback.print_exc())
                         continue
                     try:
                         data = {
                             "ip": ep.ip,
                             "mac": ep.mac,
-                            "bd": bd,
-                            "vrf": vrf,
+                            #"bd": bd,
+                            #"vrf": vrf,
                             "tenant": tenant.name,
                             "app": app_profile.name,
                             "epg": epg.name,
