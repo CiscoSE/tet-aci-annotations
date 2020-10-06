@@ -17,6 +17,7 @@ __copyright__ = "Copyright (c) 2019 Cisco and/or its affiliates."
 __license__ = "Cisco Sample Code License, Version 1.0"
 
 import os
+import json
 import re
 import logging
 import threading
@@ -219,12 +220,17 @@ class Track(StoppableThread):
                                     match = re.match('paths-(\d+)',dn.split('/')[2])
                                     leaf = match.group(1)
                         else:
-                            int_name = ep.if_name
-                            leaf = ep.if_name.split('/')[1]
+                            if ep.if_name != None:
+                                int_name = ep.if_name
+                                leaf = ep.if_name.split('/')[1]
+                            else:
+                                int_name = None
+                                leaf = None
 
                     except:
-                        print('Errror with EP: ip={},tenant={},app_profile={},epg={}'.format(ep.ip,tenant,app_profile,epg))
-                        int_name = 'Unknown'
+                        print('Error with EP: ip={},tenant={},app_profile={},epg={}'.format(ep.ip,tenant,app_profile,epg))
+                        int_name = None
+                        leaf = None
                         print(traceback.print_exc())
                         continue
                     try:
